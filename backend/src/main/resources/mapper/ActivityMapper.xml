@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyactivity.mapper.ActivityMapper">
+
+    <resultMap id="BaseResultMap" type="com.easyactivity.entity.Activity">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="location" property="location"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="status" property="status"/>
+        <result column="max_participants" property="maxParticipants"/>
+        <result column="current_participants" property="currentParticipants"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, title, description, location, start_time, end_time, status,
+        max_participants, current_participants, creator_id, create_time, update_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        WHERE status = #{status}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity (
+        title, description, location, start_time, end_time, status,
+        max_participants, current_participants, creator_id, create_time, update_time
+        ) VALUES (
+        #{title}, #{description}, #{location}, #{startTime}, #{endTime}, #{status},
+        #{maxParticipants}, #{currentParticipants}, #{creatorId}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE activity
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="maxParticipants != null">max_participants = #{maxParticipants},</if>
+            <if test="currentParticipants != null">current_participants = #{currentParticipants},</if>
+            <if test="updateTime != null">update_time = #{updateTime}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM activity WHERE id = #{id}
+    </delete>
+
+    <update id="updateParticipants">
+        UPDATE activity
+        SET current_participants = #{currentParticipants}
+        WHERE id = #{id}
+    </update>
+
+    <!-- ============================================================ -->
+    <!-- 扩展功能：搜索和查询（新增）-->
+    <!-- ============================================================ -->
+
+    <!-- 根据关键词搜索活动（标题或描述） -->
+    <select id="selectByKeyword" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        WHERE title LIKE CONCAT('%', #{keyword}, '%')
+        OR description LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据地点查询活动 -->
+    <select id="selectByLocation" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        WHERE location = #{location}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据创建者ID查询活动 -->
+    <select id="selectByCreatorId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity
+        WHERE creator_id = #{creatorId}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

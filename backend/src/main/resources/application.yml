@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: EasyActivity
+  
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/easy_activity?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root@123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.easyactivity.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    com.easyactivity: DEBUG
+    org.springframework.web: INFO
+

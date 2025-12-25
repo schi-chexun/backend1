@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyactivity.mapper.ActivityParticipantMapper">
+    
+    <resultMap id="BaseResultMap" type="com.easyactivity.entity.ActivityParticipant">
+        <id column="id" property="id"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="user_id" property="userId"/>
+        <result column="register_time" property="registerTime"/>
+        <result column="check_in_status" property="checkInStatus"/>
+        <result column="check_in_time" property="checkInTime"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, activity_id, user_id, register_time, check_in_status, check_in_time
+    </sql>
+    
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_participant
+        WHERE id = #{id}
+    </select>
+    
+    <select id="selectByActivityId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_participant
+        WHERE activity_id = #{activityId}
+        ORDER BY register_time DESC
+    </select>
+    
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_participant
+        WHERE user_id = #{userId}
+        ORDER BY register_time DESC
+    </select>
+    
+    <select id="selectByActivityIdAndUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_participant
+        WHERE activity_id = #{activityId} AND user_id = #{userId}
+    </select>
+    
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity_participant (
+            activity_id, user_id, register_time, check_in_status, check_in_time
+        ) VALUES (
+            #{activityId}, #{userId}, #{registerTime}, #{checkInStatus}, #{checkInTime}
+        )
+    </insert>
+    
+    <update id="update">
+        UPDATE activity_participant
+        <set>
+            <if test="checkInStatus != null">check_in_status = #{checkInStatus},</if>
+            <if test="checkInTime != null">check_in_time = #{checkInTime}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM activity_participant WHERE id = #{id}
+    </delete>
+    
+</mapper>
+
+
+
+
+
+
+
+

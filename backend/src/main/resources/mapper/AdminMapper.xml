@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyactivity.mapper.AdminMapper">
+
+    <!-- ============================================================ -->
+    <!-- 结果映射定义 -->
+    <!-- ============================================================ -->
+
+    <!-- 用户结果映射 -->
+    <resultMap id="UserResultMap" type="com.easyactivity.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="name" column="name"/>
+        <result property="studentId" column="student_id"/>
+        <result property="role" column="role"/>
+        <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 活动结果映射 -->
+    <resultMap id="ActivityResultMap" type="com.easyactivity.entity.Activity">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="location" column="location"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="status" column="status"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="maxParticipants" column="max_participants"/>
+        <result property="currentParticipants" column="current_participants"/>
+        <result property="creatorId" column="creator_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 审核记录结果映射 -->
+    <resultMap id="AuditLogResultMap" type="com.easyactivity.entity.AuditLog">
+        <id property="id" column="id"/>
+        <result property="activityId" column="activity_id"/>
+        <result property="auditorId" column="auditor_id"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditComment" column="audit_reason"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditorName" column="auditor_name"/>
+        <result property="activityTitle" column="activity_title"/>
+    </resultMap>
+
+
+    <!-- ============================================================ -->
+    <!-- 用户管理模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 查询所有用户 -->
+    <select id="selectAllUsers" resultMap="UserResultMap">
+        SELECT
+        id, username, name, student_id, role, email, phone,
+        create_time, update_time
+        FROM user
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据角色查询用户 -->
+    <select id="selectUsersByRole" resultMap="UserResultMap">
+        SELECT
+        id, username, name, student_id, role, email, phone,
+        create_time, update_time
+        FROM user
+        WHERE role = #{role}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新用户角色 -->
+    <update id="updateUserRole">
+        UPDATE user
+        SET role = #{role},
+        update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量删除用户 -->
+    <delete id="deleteUsersByIds">
+        DELETE FROM user
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+    <!-- ============================================================ -->
+    <!-- 活动管理模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 查询所有活动 -->
+    <select id="selectAllActivitiesWithCreator" resultMap="ActivityResultMap">
+        SELECT
+        id, title, description, location,
+        start_time, end_time, status, audit_status,
+        max_participants, current_participants,
+        creator_id, create_time, update_time
+        FROM activity
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据审核状态查询活动 -->
+    <select id="selectActivitiesByAuditStatus" resultMap="ActivityResultMap">
+        SELECT
+        id, title, description, location,
+        start_time, end_time, status, audit_status,
+        max_participants, current_participants,
+        creator_id, create_time, update_time
+        FROM activity
+        WHERE audit_status = #{auditStatus}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新活动审核状态 -->
+    <update id="updateActivityAuditStatus">
+        UPDATE activity
+        SET audit_status = #{auditStatus},
+        update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量删除活动 -->
+    <delete id="deleteActivitiesByIds">
+        DELETE FROM activity
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 强制删除活动（先删除报名记录，再删除活动） -->
+    <delete id="forceDeleteActivity">
+        <!-- 注意：这里应该在Service层使用事务来处理，这里只是示例 -->
+        DELETE FROM activity WHERE id = #{activityId}
+    </delete>
+
+
+    <!-- ============================================================ -->
+    <!-- 审核记录模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 插入审核记录 -->
+    <insert id="insertAuditLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO audit_log (
+        activity_id, auditor_id, audit_status, audit_reason, audit_time
+        )
+        VALUES (
+        #{activityId}, #{auditorId}, #{auditStatus}, #{auditComment}, #{auditTime}
+        )
+    </insert>
+
+    <!-- 查询活动的审核历史 -->
+    <select id="selectAuditLogsByActivityId" resultMap="AuditLogResultMap">
+        SELECT
+        id, activity_id, auditor_id, audit_status, audit_reason, audit_time
+        FROM audit_log
+        WHERE activity_id = #{activityId}
+        ORDER BY audit_time DESC
+    </select>
+
+    <!-- 查询审核记录（包含详细信息） -->
+    <select id="selectAuditLogsWithDetails" resultMap="AuditLogResultMap">
+        SELECT
+        al.id,
+        al.activity_id,
+        al.auditor_id,
+        al.audit_status,
+        al. audit_reason,
+        al.audit_time,
+        u.name AS auditor_name,
+        a.title AS activity_title
+        FROM audit_log al
+        LEFT JOIN user u ON al.auditor_id = u.id
+        LEFT JOIN activity a ON al.activity_id = a.id
+        WHERE al.activity_id = #{activityId}
+        ORDER BY al.audit_time DESC
+    </select>
+
+    <!-- 查询所有审核记录 -->
+    <select id="selectAllAuditLogs" resultMap="AuditLogResultMap">
+        SELECT
+        al.id,
+        al.activity_id,
+        al.auditor_id,
+        al.audit_status,
+        al. audit_reason,
+        al.audit_time,
+        u.name AS auditor_name,
+        a.title AS activity_title
+        FROM audit_log al
+        LEFT JOIN user u ON al.auditor_id = u. id
+        LEFT JOIN activity a ON al.activity_id = a. id
+        ORDER BY al.audit_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+
+    <!-- ============================================================ -->
+    <!-- 基础统计模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 统计总用户数 -->
+    <select id="countTotalUsers" resultType="long">
+        SELECT COUNT(*) FROM user
+    </select>
+
+    <!-- 统计总活动数 -->
+    <select id="countTotalActivities" resultType="long">
+        SELECT COUNT(*) FROM activity
+    </select>
+
+    <!-- 统计总报名数 -->
+    <select id="countTotalParticipations" resultType="long">
+        SELECT COUNT(*) FROM activity_participant
+    </select>
+
+    <!-- 统计待审核活动数 -->
+    <select id="countPendingAudits" resultType="long">
+        SELECT COUNT(*)
+        FROM activity
+        WHERE audit_status = 0
+    </select>
+
+    <!-- 统计今日新增用户数 -->
+    <select id="countTodayNewUsers" resultType="long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE DATE(create_time) = CURDATE()
+    </select>
+
+    <!-- 统计今日新增活动数 -->
+    <select id="countTodayNewActivities" resultType="long">
+        SELECT COUNT(*)
+        FROM activity
+        WHERE DATE(create_time) = CURDATE()
+    </select>
+
+    <!-- 统计本周新增用户数 -->
+    <select id="countWeekNewUsers" resultType="long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE YEARWEEK(create_time, 1) = YEARWEEK(NOW(), 1)
+    </select>
+
+    <!-- 统计本月新增用户数 -->
+    <select id="countMonthNewUsers" resultType="long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE YEAR(create_time) = YEAR(NOW())
+        AND MONTH(create_time) = MONTH(NOW())
+    </select>
+
+    <!-- 统计进行中的活动数 -->
+    <select id="countOngoingActivities" resultType="long">
+        SELECT COUNT(*)
+        FROM activity
+        WHERE status = 1 AND audit_status = 1
+    </select>
+
+    <!-- 统计已结束的活动数 -->
+    <select id="countFinishedActivities" resultType="long">
+        SELECT COUNT(*)
+        FROM activity
+        WHERE status = 2
+    </select>
+
+
+    <!-- ============================================================ -->
+    <!-- 排行榜/热门数据模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 查询热门活动 -->
+    <select id="selectPopularActivities" resultMap="ActivityResultMap">
+        SELECT
+        id, title, description, location,
+        start_time, end_time, status, audit_status,
+        max_participants, current_participants,
+        creator_id, create_time, update_time
+        FROM activity
+        WHERE status IN (0, 1) AND audit_status = 1
+        ORDER BY current_participants DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询最近创建的活动 -->
+    <select id="selectRecentActivities" resultMap="ActivityResultMap">
+        SELECT
+        id, title, description, location,
+        start_time, end_time, status, audit_status,
+        max_participants, current_participants,
+        creator_id, create_time, update_time
+        FROM activity
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询最活跃的用户 -->
+    <select id="selectActiveUsers" resultMap="UserResultMap">
+        SELECT
+        u.id, u.username, u.name, u.student_id,
+        u.role, u. email, u.phone,
+        u.create_time, u.update_time,
+        COUNT(ap.id) AS participation_count
+        FROM user u
+        LEFT JOIN activity_participant ap ON u.id = ap.user_id
+        GROUP BY u. id
+        ORDER BY participation_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 计算平均每个活动的报名人数 -->
+    <select id="calculateAvgParticipantsPerActivity" resultType="double">
+        SELECT
+        IFNULL(AVG(current_participants), 0)
+        FROM activity
+        WHERE audit_status = 1
+    </select>
+
+    <!-- 计算活动报名率 -->
+    <select id="calculateActivityFillRate" resultType="double">
+        SELECT
+        IFNULL(
+        (SUM(current_participants) / NULLIF(SUM(max_participants), 0)) * 100,
+        0
+        )
+        FROM activity
+        WHERE audit_status = 1 AND max_participants > 0
+    </select>
+
+
+    <!-- ============================================================ -->
+    <!-- 高级统计/分析模块 -->
+    <!-- ============================================================ -->
+
+    <!-- 按时间范围统计用户增长 -->
+    <select id="selectUserGrowthByDateRange" resultType="map">
+        SELECT
+        DATE(create_time) AS date,
+        COUNT(*) AS count
+        FROM user
+        WHERE create_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(create_time)
+        ORDER BY date
+    </select>
+
+    <!-- 按时间范围统计活动增长 -->
+    <select id="selectActivityGrowthByDateRange" resultType="map">
+        SELECT
+        DATE(create_time) AS date,
+        COUNT(*) AS count
+        FROM activity
+        WHERE create_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(create_time)
+        ORDER BY date
+    </select>
+
+    <!-- 统计各状态的活动数量 -->
+    <select id="countActivitiesByStatus" resultType="map">
+        SELECT
+        status,
+        COUNT(*) AS count,
+        CASE status
+        WHEN 0 THEN '未开始'
+        WHEN 1 THEN '进行中'
+        WHEN 2 THEN '已结束'
+        ELSE '未知'
+        END AS status_name
+        FROM activity
+        WHERE audit_status = 1
+        GROUP BY status
+        ORDER BY status
+    </select>
+
+    <!-- 统计各状态的报名数量（按签到状态） -->
+    <select id="countParticipationsByStatus" resultType="map">
+        SELECT
+        check_in_status AS status,
+        COUNT(*) AS count,
+        CASE check_in_status
+        WHEN 0 THEN '未签到'
+        WHEN 1 THEN '已签到'
+        ELSE '未知'
+        END AS status_name
+        FROM activity_participant
+        GROUP BY check_in_status
+        ORDER BY check_in_status
+    </select>
+
+    <!-- 查询报名人数最多的活动 -->
+    <select id="selectTopActivitiesByParticipants" resultMap="ActivityResultMap">
+        SELECT
+        id, title, description, location,
+        start_time, end_time, status, audit_status,
+        max_participants, current_participants,
+        creator_id, create_time, update_time,
+        ROUND((current_participants / NULLIF(max_participants, 0)) * 100, 2) AS fill_rate
+        FROM activity
+        WHERE audit_status = 1 AND max_participants > 0
+        ORDER BY current_participants DESC, fill_rate DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询创建活动最多的用户 -->
+    <select id="selectTopCreators" resultType="map">
+        SELECT
+        u.id,
+        u.username,
+        u.name,
+        u. student_id AS studentId,
+        COUNT(a.id) AS activityCount
+        FROM user u
+        LEFT JOIN activity a ON u. id = a.creator_id
+        WHERE a.audit_status = 1
+        GROUP BY u.id
+        HAVING activityCount > 0
+        ORDER BY activityCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 按活动地点统计活动数量 -->
+    <select id="countActivitiesByLocation" resultType="map">
+        SELECT
+        location,
+        COUNT(*) AS count
+        FROM activity
+        WHERE audit_status = 1 AND location IS NOT NULL
+        GROUP BY location
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+    <!-- 按月统计活动数量（最近12个月） -->
+    <select id="countActivitiesByMonth" resultType="map">
+        SELECT
+        DATE_FORMAT(create_time, '%Y-%m') AS month,
+        COUNT(*) AS count
+        FROM activity
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+        AND audit_status = 1
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+        ORDER BY month DESC
+    </select>
+
+</mapper>
